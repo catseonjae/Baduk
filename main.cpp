@@ -1,12 +1,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 class Baduk{
-    set<int> edge[361],cnt[361], child[361];
-    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, 
-    board[361], p[361];
+    const int BLACK=1,WHITE=-1,EMPTY=0,INF=1e9;
     map<int,double> score;
+    set<int> edge[361],cnt[361], child[361];
     
-    const int BLACK=1,WHITE=-1,EMPTY=0;
+    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, 
+    board[361], p[361], v[361], color[2]={WHITE,BLACK};
     
     int turn=BLACK;
     
@@ -75,14 +75,14 @@ public:
     void put(int node){
         //돌이 이미 있음
         if(board[node]) return;
-        board[node]=turn;
         bool suicide=true;
         for(int i: linked(node)){
             if(board[i]==turn && cnt[i].size()==1) continue;
-            if(board[i]!=turn) continue;
+            if(board[i]==-turn) continue;
             suicide=false;
         }
         if(suicide) return;
+        board[node]=turn;
         
         for(int i: linked(node)){
             if(board[i]==turn) link(node,i);
@@ -95,10 +95,10 @@ public:
                 }
             }
         }
+        turn*=-1;
     }
     void put(int y, int x){
         put(point_to_node(y,x));
-        turn*=-1;
     }
     void print(){
         cout<<score[-1]<<" "<<score[1];
@@ -118,6 +118,53 @@ public:
         cout<<endl;
         cout<<endl;
     }
+    void estimate(){
+        cout<<"calculating..."<<endl;
+        memset(v,EMPTY,sizeof(v));
+        map<int,queue<int>> q;
+        q[WHITE]=queue<int>();
+        q[BLACK]=queue<int>();
+        for(int i=0;i<361;i++){
+            if(board[i]!=EMPTY) q[board[i]].push(i);
+        }
+        int k=2;
+        while(!q.empty()){
+            for(int c:color){
+                cout<<c<<" ; ";
+                int size=q[c].size();
+                while(size--){
+                    int now=q[c].front();
+                    cout<<now<<" ";
+                    q[c].pop();
+                    if(v[now]==INF) continue;
+                    for(int i:linked(now)){
+                        if(v[i]==-k*c){
+                            v[i]=INF;
+                            continue;
+                        }
+                        if(v[i]==INF) continue;
+                        if(board[i]==EMPTY && board[i]==EMPTY){
+                            v[i]=k*c;
+                            q[c].push(i);
+                        }
+                    }
+                }
+            }
+            k++;
+        }
+        
+        map<int,double> score_assume;
+        
+        for(int i:color){
+            score_assume[i]=score[i];
+        }
+        for(int i=0;i<361;i++){
+            if(v[i]==INF) continue;
+            score_assume[v[i]]+=1;
+        }
+        for(int i:color) cout<<"estimate: "<<score_assume[i]<<" ";
+        cout<<endl;
+    }
 };
 
 int main() {
@@ -135,4 +182,6 @@ int main() {
     
     baduk.put(0,1);
     baduk.print();
+    
+    baduk.estimate();
 }
