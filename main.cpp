@@ -149,6 +149,7 @@ public:
                         }
                     }
                 }
+                if(q[c].empty()) q.erase(c);
             }
             k++;
         }
@@ -160,7 +161,7 @@ public:
         }
         for(int i=0;i<361;i++){
             if(v[i]==INF) continue;
-            score_assume[v[i]]+=1;
+            score_assume[v[i]/abs(v[i])]+=1;
         }
         for(int i:color) cout<<"estimate: "<<score_assume[i]<<" ";
         cout<<endl;
