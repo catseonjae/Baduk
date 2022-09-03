@@ -1,12 +1,13 @@
 #include <bits/stdc++.h>
 using namespace std;
 class Baduk{
-    int p[361];
     set<int> edge[361],cnt[361], child[361];
-    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, board[361];
+    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, 
+    board[361], p[361];
     map<int,double> score;
     
     const int BLACK=1,WHITE=-1,EMPTY=0;
+    
     int turn=BLACK;
     
     int point_to_node(int y, int x){
@@ -98,31 +99,37 @@ public:
     }
     void print(){
         cout<<score[-1]<<" "<<score[1];
+        cout<<endl;
         for(int i=0;i<19;i++){
             for(int j=0;j<19;j++){
                 int node=point_to_node(i,j);
-                if(board[node]==0) cout<<"+";
+                if(board[node]==0){
+                    if(i%6==3 && j%6==3) cout<<"0";
+                    else cout<<"+";
+                }
                 else if (board[node]==1) cout<<"b";
                 else cout<<"w";
             }
             cout<<endl;
         }
+        cout<<endl;
+        cout<<endl;
     }
 };
 
 int main() {
     Baduk baduk = Baduk(7);
     baduk.print();
-    cout<<endl<<endl;
+    
     baduk.put(0,0);
     baduk.print();
-    cout<<endl<<endl;
+    
     baduk.put(1,0);
     baduk.print();
-    cout<<endl<<endl;
+    
     baduk.put(1,1);
     baduk.print();
-    cout<<endl<<endl;
+    
     baduk.put(0,1);
     baduk.print();
 }
