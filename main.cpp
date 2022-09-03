@@ -6,9 +6,8 @@ class Baduk{
     set<int> edge[361],cnt[361], child[361];
     
     int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, 
-    board[361], p[361], v[361], color[2]={WHITE,BLACK};
+    board[361], p[361], v[361], color[2]={BLACK,WHITE};
     
-    int turn=BLACK;
     
     int point_to_node(int y, int x){
         return 19*y+x;
@@ -40,6 +39,7 @@ class Baduk{
     }
     
 public:
+    int turn=BLACK;
     Baduk(double rule){
         score[WHITE]=rule;
         score[BLACK]=0;
@@ -72,16 +72,16 @@ public:
         child[component].clear();
         return ret;
     }
-    void put(int node){
+    int put(int node){
         //돌이 이미 있음
-        if(board[node]) return;
+        if(board[node]) return 0;
         bool suicide=true;
         for(int i: linked(node)){
             if(board[i]==turn && cnt[i].size()==1) continue;
             if(board[i]==-turn) continue;
             suicide=false;
         }
-        if(suicide) return;
+        if(suicide) return -1;
         board[node]=turn;
         
         for(int i: linked(node)){
@@ -96,12 +96,15 @@ public:
             }
         }
         turn*=-1;
+        return 1;
     }
     void put(int y, int x){
-        put(point_to_node(y,x));
+        int s=put(point_to_node(y,x));
+        if(s==0) cout<<"you can't put stone on another stone\n";
+        if(s==-1) cout<<"don't suicide...\n";
     }
     void print(){
-        cout<<score[-1]<<" "<<score[1];
+        for(int i: color) cout<<score[i]<<" ";
         cout<<endl;
         for(int i=0;i<19;i++){
             for(int j=0;j<19;j++){
@@ -119,7 +122,6 @@ public:
         cout<<endl;
     }
     void estimate(){
-        cout<<"calculating..."<<endl;
         memset(v,EMPTY,sizeof(v));
         map<int,queue<int>> q;
         q[WHITE]=queue<int>();
@@ -128,13 +130,11 @@ public:
             if(board[i]!=EMPTY) q[board[i]].push(i);
         }
         int k=2;
-        while(!q.empty()){
+        while(!q[BLACK].empty() && !q[WHITE].empty()){
             for(int c:color){
-                cout<<c<<" ; ";
                 int size=q[c].size();
                 while(size--){
                     int now=q[c].front();
-                    cout<<now<<" ";
                     q[c].pop();
                     if(v[now]==INF) continue;
                     for(int i:linked(now)){
@@ -143,13 +143,12 @@ public:
                             continue;
                         }
                         if(v[i]==INF) continue;
-                        if(board[i]==EMPTY && board[i]==EMPTY){
+                        if(board[i]==EMPTY && v[i]==EMPTY){
                             v[i]=k*c;
                             q[c].push(i);
                         }
                     }
                 }
-                if(q[c].empty()) q.erase(c);
             }
             k++;
         }
@@ -160,29 +159,47 @@ public:
             score_assume[i]=score[i];
         }
         for(int i=0;i<361;i++){
-            if(v[i]==INF) continue;
-            score_assume[v[i]/abs(v[i])]+=1;
+            if(v[i]==INF) cout<<"+";
+            else if(board[i]==BLACK){
+                cout<<"B";
+            } else if(board[i]==WHITE){
+                cout<<"W";
+            }
+            else{
+                score_assume[v[i]/abs(v[i])]+=1;
+                if(v[i]/abs(v[i])==BLACK) cout<<"b";
+                else cout<<"w";
+            }
+            if(i%19==1) cout<<endl; 
         }
-        for(int i:color) cout<<"estimate: "<<score_assume[i]<<" ";
+        cout<<"estimate: ";
+        for(int i:color) cout<<score_assume[i]<<" ";
         cout<<endl;
     }
 };
-
+int key(map<int,bool>::iterator it){
+    return (*it).first;
+}
 int main() {
     Baduk baduk = Baduk(7);
-    baduk.print();
-    
-    baduk.put(0,0);
-    baduk.print();
-    
-    baduk.put(1,0);
-    baduk.print();
-    
-    baduk.put(1,1);
-    baduk.print();
-    
-    baduk.put(0,1);
-    baduk.print();
-    
+    map<int,bool> done;
+    done[1]=done[-1]=false;
+    map<int,string> user;
+    user[-1]="White",user[1]="Black";
+    while(true){
+        cout<<"\x1B[2J\x1B[H";
+        cout<<user[baduk.turn]<<" turn\n";
+        baduk.print();
+        cout<<"put: ";
+        int y, x; cin>>y>>x;
+        if(y==-1 && x==-1)  done[baduk.turn]=1;
+        else{
+            for(auto i=done.begin();i!=done.end();i++) done[key(i)]=false;
+        }
+        bool f=true;
+        for(auto i=done.begin();i!=done.end();i++) if(done[key(i)]==false) f=false;
+        if(f) break;
+        baduk.put(y,x);
+    }
     baduk.estimate();
 }
