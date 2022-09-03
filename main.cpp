@@ -86,16 +86,19 @@ public:
         
         for(int i: linked(node)){
             if(board[i]==turn) link(node,i);
-            else if(board[i]==0) cnt[node].insert(i);
+            else if(board[i]==EMPTY) cnt[node].insert(i);
             else{
                 cnt[i].erase(node);
-                if(cnt[i].empty()) score[turn]=score[turn]+clear(i);
+                if(cnt[i].empty()){
+                    score[turn]=score[turn]+clear(i);
+                    clear(i);
+                }
             }
         }
-        turn*=-1;
     }
     void put(int y, int x){
         put(point_to_node(y,x));
+        turn*=-1;
     }
     void print(){
         cout<<score[-1]<<" "<<score[1];
