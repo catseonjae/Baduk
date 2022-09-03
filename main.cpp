@@ -1,12 +1,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 class Baduk{
-    set<set<int>> components;
-    //각 노드의 component, 각 컴포넌트의 엣지 및 
-    set<set<int>>::iterator p[19][19];
-    map< set< set<int> > :: iterator, set<set< set<int> > :: iterator> > edge;
-    map< set< set<int> > :: iterator, int> color, cnt;
-    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, board[19][19];
+    int p[361];
+    set<int> edge[361],cnt[361], child[361];
+    int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, board[361];
     map<int,double> score;
     
     const int BLACK=1,WHITE=-1,EMPTY=0;
@@ -16,7 +13,7 @@ class Baduk{
         return 19*y+x;
     }
     bool is_in_range(int x){
-        return 0<=x && x<19 && 0<=y && y<19;
+        return 0<=x && x<19;
     }
     bool is_in_range(int y, int x){
         return is_in_range(y) && is_in_range(x);
@@ -30,88 +27,102 @@ class Baduk{
         }
         return ret;
     }
-    public:
-        Baduk(double rule){
-            score[WHITE]=rule;
-            score[BLACK]=0;
-            set<int> st;
-            for(int i=0;i<19;i++){
-                for(int j=0;j<19;j++){
-                    st.insert(point_to_node(i,j));
-                }
-            }
-            components.insert(st);
-            auto empty_set=set<set<set<int>>::iterator>();
-            edge[components.begin()]=*empty_set;
-            color[components.begin()]=0;
-            for(int i=0;i<19;i++){
-                for(int j=0;j<19;j++){
-                    p[i][j]=components.begin();
-                }
-            }
-        }
-        void link(set<set<int>>::iterator a, set<set<int>>::iterator b){
-            edge[a].insert(b);
-            edge[b].insert(a);
-        }
-        void merge(set<set<int>>::iterator a, set<set<int>>::iterator b){
-            (*a).insert((*b).begin(),(*b).end());
-            for(auto i:edge[b]){
-                edge[i].erase(b);
-                link(i,a);
-            }
-            int c=color[a];
-            for(int i: (*b)){
-                board[i/19][i%19]=c;
-                p[i/19][i%19]=a;
-            }
-            edge.erase(b);
-        }
-        void clear(set<set<int>>::iterator group){
-            color[group]=0;
-            for(auto i: group){
-                board[i/19][i%19]=0;
-            }
-            for(auto i: edge[group]){
-                if(color[i]==0) merge(group,i);
-            }
-        }
-        void put(int y, int x){
-            if(color[p[y][x]]) return;
-            
-            components.insert(set<int>(node);
-            auto now=components.find(set<int>(node));
-            int way=4;
-            for(int next: linked(node)){
-                auto it=p[next/19][next%19];
-                if(color[it]==turn){
-                    merge(now,it);
-                    way--;
-                }
-                else{
-                    if(color[it]!=0){
-                        way--;
-                        edge[it].erase(p[y][x]);
-                        cnt[it]--;
-                        if(cnt[it]==0) clear(it);
-                    }
-                    link(now, it);
-                }
-            }
-            
-            int node=point_to_node(y,x));
-            (*p[y][x]).erase(node);
-            edge.erase(p[y][x]);
-            
-            cnt[now]+=way;
-            p[y][x]=now;
-            color[now]=turn;
-            
-            board[y][x]=turn;
-            turn*=-1;
-        }
-        
-};
-int main() {
+    inline vector<int> linked(int node){
+        return linked(node/19,node%19);
+    }
+    int find(int a){
+        if(p[a]==a) return a;
+        child[p[a]].erase(a);
+        p[a]=find(p[a]);
+        child[p[a]].insert(a);
+        return p[a];
+    }
     
+public:
+    Baduk(double rule){
+        score[WHITE]=rule;
+        score[BLACK]=0;
+        for(int i=0;i<19;i++){
+            for(int j=0;j<19;j++){
+                int now=point_to_node(i,j);
+                board[now]=0;
+                p[now]=now;
+            }
+        }
+    }
+    
+    void link(int a, int b){
+        a=find(a);
+        b=find(b);
+        if(a==b) return;
+        cnt[a].erase(b);
+        p[b]=a;
+        cnt[a].insert(cnt[b].begin(),cnt[b].end());
+        cnt[b].clear();
+    }
+    int clear(int component){
+        int ret=1;
+        component=find(component);
+        board[component]=0;
+        for(int i: child[component]){
+            p[i]=i;
+            ret+=clear(i);
+        }
+        child[component].clear();
+        return ret;
+    }
+    void put(int node){
+        //돌이 이미 있음
+        if(board[node]) return;
+        board[node]=turn;
+        bool suicide=true;
+        for(int i: linked(node)){
+            if(board[i]==turn && cnt[i].size()==1) continue;
+            if(board[i]!=turn) continue;
+            suicide=false;
+        }
+        if(suicide) return;
+        
+        for(int i: linked(node)){
+            if(board[i]==turn) link(node,i);
+            else if(board[i]==0) cnt[node].insert(i);
+            else{
+                cnt[i].erase(node);
+                if(cnt[i].empty()) score[turn]=score[turn]+clear(i);
+            }
+        }
+        turn*=-1;
+    }
+    void put(int y, int x){
+        put(point_to_node(y,x));
+    }
+    void print(){
+        cout<<score[-1]<<" "<<score[1];
+        for(int i=0;i<19;i++){
+            for(int j=0;j<19;j++){
+                int node=point_to_node(i,j);
+                if(board[node]==0) cout<<"+";
+                else if (board[node]==1) cout<<"b";
+                else cout<<"w";
+            }
+            cout<<endl;
+        }
+    }
+};
+
+int main() {
+    Baduk baduk = Baduk(7);
+    baduk.print();
+    cout<<endl<<endl;
+    baduk.put(0,0);
+    baduk.print();
+    cout<<endl<<endl;
+    baduk.put(1,0);
+    baduk.print();
+    cout<<endl<<endl;
+    baduk.put(1,1);
+    baduk.print();
+    cout<<endl<<endl;
+    baduk.put(0,1);
+    baduk.print();
 }
