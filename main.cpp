@@ -1,13 +1,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 class Baduk{
-    const int BLACK=1,WHITE=-1,EMPTY=0,INF=1e9;
-    map<int,double> score;
+    const int BLACK=1,WHITE=-1,EMPTY=0,INF=1e9, STONE_EXIST=-2,SUICIDE=-1;
+    map<int,double> captured;
     set<int> edge[361],cnt[361], child[361];
     
     int dy[4]={0,-1,0,1}, dx[4]={1,0,-1,0}, 
     board[361], p[361], v[361], color[2]={BLACK,WHITE};
-    
     
     int point_to_node(int y, int x){
         return 19*y+x;
@@ -40,9 +39,12 @@ class Baduk{
     
 public:
     int turn=BLACK;
+    map<int,string> user;
+    
     Baduk(double rule){
-        score[WHITE]=rule;
-        score[BLACK]=0;
+        user[-1]="White",user[1]="Black";
+        captured[WHITE]=rule;
+        captured[BLACK]=0;
         for(int i=0;i<19;i++){
             for(int j=0;j<19;j++){
                 int now=point_to_node(i,j);
@@ -52,6 +54,7 @@ public:
         }
     }
     
+    //link component of a and component of b
     void link(int a, int b){
         a=find(a);
         b=find(b);
@@ -61,6 +64,8 @@ public:
         cnt[a].insert(cnt[b].begin(),cnt[b].end());
         cnt[b].clear();
     }
+    
+    //clear component stones
     int clear(int component){
         int ret=1;
         component=find(component);
@@ -72,39 +77,57 @@ public:
         child[component].clear();
         return ret;
     }
+    
+    //put stone on node or catch exception
     int put(int node){
         //돌이 이미 있음
-        if(board[node]) return 0;
-        bool suicide=true;
-        for(int i: linked(node)){
-            if(board[i]==turn && cnt[i].size()==1) continue;
-            if(board[i]==-turn) continue;
-            suicide=false;
+        if(board[node]!=EMPTY) return -2;
+        bool eat=false;
+        for(int i:linked(node)){
+            if(board[i]==-turn && cnt[i].size()==1){
+                eat=true;
+            }
         }
-        if(suicide) return -1;
-        board[node]=turn;
         
+        if(!eat){
+            bool suicide=true;
+            for(int i: linked(node)){
+                if(board[i]==turn && cnt[i].size()==1) continue;
+                if(board[i]==-turn) continue;
+                suicide=false;
+            }
+            if(suicide) return -1;
+        }
+        
+        board[node]=turn;
+        int ret=0;
         for(int i: linked(node)){
             if(board[i]==turn) link(node,i);
             else if(board[i]==EMPTY) cnt[node].insert(i);
             else{
                 cnt[i].erase(node);
                 if(cnt[i].empty()){
-                    score[turn]=score[turn]+clear(i);
-                    clear(i);
+                    int get=clear(i);
+                    captured[turn]=captured[turn]+get;
+                    ret+=get;
                 }
             }
         }
         turn*=-1;
-        return 1;
+        return ret;
     }
+    //put stone on (y,x) or try to do so.
     void put(int y, int x){
         int s=put(point_to_node(y,x));
-        if(s==0) cout<<"you can't put stone on another stone\n";
-        if(s==-1) cout<<"don't suicide...\n";
+        if(s==STONE_EXIST) cout<<"you can't put stone on another stone\n";
+        if(s==SUICIDE) cout<<"don't suicide...\n";
+        if(s==1) cout<<user[-turn]<<" captured stone!\n";
+        if(s>1) cout<<user[-turn]<<" captured "<<s<<" stones!\n";
     }
+    //print turn, captured stone and board
     void print(){
-        for(int i: color) cout<<score[i]<<" ";
+        cout<<user[turn]<<" turn.\n";
+        for(int i: color) cout<<user[i]<<":"<<captured[i]<<" ";
         cout<<endl;
         for(int i=0;i<19;i++){
             for(int j=0;j<19;j++){
@@ -121,6 +144,7 @@ public:
         cout<<endl;
         cout<<endl;
     }
+    //estimate score
     void estimate(){
         memset(v,EMPTY,sizeof(v));
         map<int,queue<int>> q;
@@ -153,10 +177,10 @@ public:
             k++;
         }
         
-        map<int,double> score_assume;
+        map<int,double> score;
         
         for(int i:color){
-            score_assume[i]=score[i];
+            score[i]=captured[i];
         }
         for(int i=0;i<361;i++){
             if(v[i]==INF) cout<<"+";
@@ -166,17 +190,18 @@ public:
                 cout<<"W";
             }
             else{
-                score_assume[v[i]/abs(v[i])]+=1;
+                score[v[i]/abs(v[i])]+=1;
                 if(v[i]/abs(v[i])==BLACK) cout<<"b";
                 else cout<<"w";
             }
             if(i%19==1) cout<<endl; 
         }
         cout<<"estimate: ";
-        for(int i:color) cout<<score_assume[i]<<" ";
+        for(int i:color) cout<<score[i]<<" ";
         cout<<endl;
     }
 };
+
 int key(map<int,bool>::iterator it){
     return (*it).first;
 }
@@ -184,20 +209,21 @@ int main() {
     Baduk baduk = Baduk(7);
     map<int,bool> done;
     done[1]=done[-1]=false;
-    map<int,string> user;
-    user[-1]="White",user[1]="Black";
     while(true){
         cout<<"\x1B[2J\x1B[H";
-        cout<<user[baduk.turn]<<" turn\n";
         baduk.print();
         cout<<"put: ";
         int y, x; cin>>y>>x;
-        if(y==-1 && x==-1)  done[baduk.turn]=1;
+        
+        bool f=true;
+        if(y==-1 && x==-1)  {
+            done[baduk.turn]=1;
+            if(!done[-baduk.turn]) f=false;
+        }
         else{
             for(auto i=done.begin();i!=done.end();i++) done[key(i)]=false;
+            f=false;
         }
-        bool f=true;
-        for(auto i=done.begin();i!=done.end();i++) if(done[key(i)]==false) f=false;
         if(f) break;
         baduk.put(y,x);
     }
