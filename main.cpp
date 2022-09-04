@@ -1,5 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
+//https://docs.google.com/document/d/1XzkW0oGAxvrxmn2wHBsMKYp1KFHIGSr_xclHCVuo3xA/edit#
+//opengl
 class Baduk{
     const int BLACK=1,WHITE=-1,EMPTY=0,INF=1e9;
     const int STONE_EXIST=-2,SUICIDE=-1,INVALID_COORD=-3;
