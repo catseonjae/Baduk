@@ -4,6 +4,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 class Baduk{
+public:
     const int BLACK=1,WHITE=-1,EMPTY=0,INF=1e9;
     const int STONE_EXIST=-2,SUICIDE=-1,INVALID_COORD=-3;
     
@@ -41,8 +42,19 @@ class Baduk{
         child[p[a]].insert(a);
         return p[a];
     }
+    set<int> family(int node){
+        node=find(node);
+        set<int> ret;
+        ret.insert(node);
+        for(int i: child[node]){
+            p[i]=i;
+            set<int> t=family(i);
+            ret.insert(t.begin(),t.end());
+        }
+        child[node].clear();
+        return ret;
+    }
     
-public:
     int turn=BLACK;
     map<int,string> user;
     
@@ -61,10 +73,11 @@ public:
     
     //link component of a and component of b
     void link(int a, int b){
+        int pa=a;
         b=find(b);
-        cnt[b].erase(a);
         a=find(a);
         if(a==b) return;
+        cnt[b].erase(pa);
         p[b]=a;
         child[a].insert(b);
         cnt[a].insert(cnt[b].begin(),cnt[b].end());
@@ -72,17 +85,22 @@ public:
     }
     
     //clear component stones
-    int clear(int component){
-        int ret=1;
-        component=find(component);
-        board[component]=EMPTY;
-        for(int i: child[component]){
+    int clear(int node){
+        node=find(node);
+        set<int> component = family(node);
+        for(int i: component){
             p[i]=i;
+            child[i].clear();
             board[i]=EMPTY;
-            ret+=clear(i);
         }
-        child[component].clear();
-        return ret;
+        for(int i: component){
+            for(int j: linked(i)){
+                if(board[j]){
+                    cnt[j].insert(i);
+                }
+            }
+        }
+        return component.size();
     }
     
     //put stone on node or catch exception
@@ -113,14 +131,10 @@ public:
             if(board[i]==turn) link(node,i);
             else if(board[i]==EMPTY) cnt[node].insert(i);
             else{
-                cnt[i].erase(node);
-                if(i==1){
-                    for(auto j:cnt[i]){
-                        cout<<j/19<<" "<<j%19<<endl;
-                    }
-                }
-                if(cnt[i].empty()){
-                    int get=clear(i);
+                int j=find(i);
+                cnt[j].erase(node);
+                if(cnt[j].empty()){
+                    int get=clear(j);
                     captured[turn]=captured[turn]+get;
                     ret+=get;
                 }
@@ -157,6 +171,23 @@ public:
             cout<<endl;
         }
         cout<<endl;
+        set<int> bosses;
+        for(int i=0;i<361;i++){
+            if(board[i]==EMPTY) continue;
+            bosses.insert(find(i));
+        }
+        for(int i: bosses){
+            for(int j: family(i)){
+                if(j==i){
+                    cout<<"<"<<j/19<<" "<<j%19<<"> ";
+                    continue;
+                }
+                cout<<j/19<<" "<<j%19<<' ';
+            }
+            cout<<"; ";
+            cout<<cnt[i].size();
+            cout<<endl;
+        }
     }
     //estimate score
     void estimate(){
@@ -233,8 +264,23 @@ int main() {
     bool running=true;
     while(running){
         baduk.print();
-        cout<<"put: ";
+        string s; cin>>s;
         int y, x; cin>>y>>x;
+        int node=y*19+x;
+        if(s=="cnt"){
+            for(int i: baduk.cnt[baduk.find(node)]){
+                cout<<i/19<<" "<<i%19<<" ";
+            }
+            continue;
+        } else if(s=="family"){
+            for(int i: baduk.family(node)){
+                cout<<i/19<<" "<<i%19<<" ";
+            }
+            continue;
+        } else if(s=="p"){
+            cout<<baduk.find(node);
+            continue;   
+        }
         
         if(y==-1 && x==-1)  {
             done[baduk.turn]=true;
