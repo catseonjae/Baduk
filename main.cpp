@@ -171,22 +171,38 @@ public:
             cout<<endl;
         }
         cout<<endl;
+        
+    }
+    void info(){
+        cout<<"components: \n";
         set<int> bosses;
         for(int i=0;i<361;i++){
-            if(board[i]==EMPTY) continue;
-            bosses.insert(find(i));
+            if(board[i]){
+                cout<<i<<"("<<find(i)<<") ";
+                bosses.insert(find(i));
+            }
         }
+        cout<<endl;
         for(int i: bosses){
             for(int j: family(i)){
                 if(j==i){
                     cout<<"<"<<j/19<<" "<<j%19<<"> ";
                     continue;
                 }
-                cout<<j/19<<" "<<j%19<<' ';
+                cout<<"("<<j/19<<" "<<j%19<<") ";
             }
-            cout<<"; ";
-            cout<<cnt[i].size();
+            cout<<"\n; ";
+            for(int j: cnt[i]){
+                cout<<"("<<j/19<<" "<<j%19<<") ";
+            }
             cout<<endl;
+        }
+        
+        cout<<"p: \n";
+        for(int i=0;i<361;i++){
+            if(board[i]){
+                cout<<p[i]/19<<" "<<p[i]%19<<"(find= "<<find(i)/19<<" "<<find(i)%19<<")"<<endl;
+            }
         }
     }
     //estimate score
@@ -265,22 +281,12 @@ int main() {
     while(running){
         baduk.print();
         string s; cin>>s;
+        if(s=="info"){
+            baduk.info();
+            continue;
+        }
         int y, x; cin>>y>>x;
         int node=y*19+x;
-        if(s=="cnt"){
-            for(int i: baduk.cnt[baduk.find(node)]){
-                cout<<i/19<<" "<<i%19<<" ";
-            }
-            continue;
-        } else if(s=="family"){
-            for(int i: baduk.family(node)){
-                cout<<i/19<<" "<<i%19<<" ";
-            }
-            continue;
-        } else if(s=="p"){
-            cout<<baduk.find(node);
-            continue;   
-        }
         
         if(y==-1 && x==-1)  {
             done[baduk.turn]=true;
